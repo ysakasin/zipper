@@ -3,6 +3,8 @@
 #include <vector>
 #include <cmath>
 
+#include "./bitstream.h"
+
 #define WINDOW_SIZE 0x8000
 #define MINIMUM_CHAIN 3
 #define MAXIMUM_CHAIN 258
@@ -15,21 +17,6 @@ struct chain {
 	int length;
 	chain *next;
 };
-
-pair<uint16_t, int> static_huffman_table(uint16_t x) {
-	if (x <= 143) {
-		return {0b00110000 + x, 8}
-	}
-	else if (x <= 255) {
-		return {0b110010000 + (144 - x), 9}
-	}
-	else if (x <= 279) {
-		return {0b0000000 + (256 - x), 7}
-	}
-	else {
-		return {0b11000000 + (280 - x), 8}
-	}
-}
 
 chain *lz77(char *data, int size, int pos) {
 	int begin_pos = (pos < WINDOW_SIZE ? 0 : pos - WINDOW_SIZE);
@@ -80,13 +67,13 @@ int integer_length(uint16_t x) {
 	return length;
 }
 
-void length_to_code(int length, vector<uint16_t> *codes) {
+void length_to_bitstream(int length, Bitstream *bstream) {
 	if (length <= 10) {
-		codes->push_back(254 + length);
+		bstream->push_with_encode(254 + length);
 		return;
 	}
 	if (length == 258) {
-		codes->push_back(285);
+		bstream->push_with_encode(285);
 		return;
 	}
 
@@ -95,13 +82,13 @@ void length_to_code(int length, vector<uint16_t> *codes) {
 	uint32_t base = (length-3) / divisor;
 	uint32_t extra = (length-3) % divisor;
 
-	codes->push_back(257 + (4 * len) + base);
-	codes->push_back(extra);
+	bstream->push_with_encode(257 + (4 * len) + base);
+	bstream->push(extra, len);
 }
 
-void distance_to_code(int length, vector<uint16_t> *codes) {
+void distance_to_bitstream(int length, Bitstream *bstream) {
 	if (length <= 2) {
-		codes->push_back(length - 1);
+		bstream->push(length - 1, 5);
 		return;
 	}
 
@@ -110,29 +97,31 @@ void distance_to_code(int length, vector<uint16_t> *codes) {
 	uint32_t base = (length-1) / divisor;
 	uint32_t extra = (length-1) % divisor;
 
-	codes->push_back(2 * len + base);
-	codes->push_back(extra);
+	bstream->push(2 * len + base, 5);
+	bstream->push(extra, len);
 }
 
-void chain_to_codes(char *data, int size, chain *chain_p, vector<uint16_t> *codes) {
+void chain_to_bitstream(char *data, int size, chain *chain_p, Bitstream *bstream) {
 	int pos = 0;
 	while (pos < size) {
 		if (chain_p == NULL) {
-			codes->push_back(data[pos]);
+			bstream->push_with_encode(data[pos]);
 			pos++;
-		}
-		else if (chain_p->pos == pos) {
-			length_to_code(chain_p->length, codes);
-			distance_to_code(chain_p->distance, codes);
-			pos += chain_p->length;
-			chain_p = chain_p->next;
+		// }
+		// else if (chain_p->pos == pos) {
+		// 	length_to_bitstream(chain_p->length, bstream);
+		// 	distance_to_bitstream(chain_p->distance, bstream);
+		// 	pos += chain_p->length;
+		// 	chain_p = chain_p->next;
 		} else {
-			codes->push_back(data[pos]);
+			bstream->push_with_encode(data[pos]);
 			pos++;
 		}
 	}
-	codes->push_back(256);
+	bstream->push_with_encode(256);
 }
+
+unsigned long crc(unsigned char *buf, int len);
 
 int main() {
 	ifstream file ("LICENSE", ios::in | ios::binary | ios::ate);
@@ -170,26 +159,60 @@ int main() {
 	}
 	cout << endl;
 
-	vector<uint16_t> codes;
-	chain_to_codes(text, size, chain_head, &codes);
-
-	for (auto n : codes) {
-		cout << n << " ";
-	}
-	cout << endl;
-
 	Bitstream bitstream;
+	bitstream.push(0b1,  1);
+	bitstream.push(0b10, 2);
 
-	int i = 0;
-	while (i < codes.size()) {
-		if (codes[i] >= 257) {
-			bitstream.add(static_huffman_table(codes[i]));
-			bitstream.add(codes[i+1], length)
-			bitstream.add(codes[i+2], 5);
-		}
-		else {
-			bitstream.add(static_huffman_table(codes[i]));
-			i++;
-		}
+	ofstream wf;
+	// wf.open("tmp/test.gz", ios::out | ios::binary);
+
+
+	// while (!bitstream.empty()) {
+ //    	char a = bitstream.fetch();
+	// 	wf.write(&a, 1);
+	// }
+	// return 0;
+	chain_to_bitstream(text, size, chain_head, &bitstream);
+
+
+    wf.open("tmp/test.gz", ios::out | ios::binary);
+
+	/* gzip header */
+	unsigned char signature[2] = {0x1f, 0x8b};
+	wf.write((char *)signature, sizeof(char) * 2);
+
+	char method = 8;
+	wf.write(&method, sizeof(char));
+
+	char flag = 0b00001000;
+	wf.write(&flag, sizeof(char));
+
+	uint32_t mtime = 0;
+	wf.write((char *)&mtime, sizeof(uint32_t));
+
+	char extra_flag = 0;
+	wf.write(&extra_flag, sizeof(char));
+
+	char os = 0xff;
+	wf.write(&os, sizeof(char));
+
+	wf.write("LICENSE", sizeof(char) * 8);
+
+	// char xlen = 0;
+	// wf.write(&xlen, sizeof(char));
+	/* gzip header end */
+
+    while (!bitstream.empty()) {
+    	char a = bitstream.fetch();
+		wf.write(&a, 1);
 	}
+
+	uint32_t crc32 = crc((unsigned char *)text, size);
+	uint32_t isize = size % 0x100000000;
+	wf.write((char *)&crc32, sizeof(uint32_t));
+	wf.write((char *)&isize, sizeof(uint32_t));
+
+    wf.close();
+
+	return 0;
 }
