@@ -1,16 +1,22 @@
 #include "huffman.h"
+#include <iostream>
+using namespace std;
 
 std::pair<uint16_t, int> static_huffman_table(uint16_t x) {
+	// cout << "h" << x << endl;
 	if (x <= 143) {
 		return {0b00110000 + x, 8};
 	}
 	else if (x <= 255) {
-		return {0b110010000 + (144 - x), 9};
+		return {0b110010000 + (x - 144), 9};
 	}
 	else if (x <= 279) {
-		return {0b0000000 + (256 - x), 7};
+		return {0b0000000 + (x - 256), 7};
+	}
+	else if (x <= 287) {
+		return {0b11000000 + (x - 280), 8};
 	}
 	else {
-		return {0b11000000 + (280 - x), 8};
+		throw "huffman out of range";
 	}
 }

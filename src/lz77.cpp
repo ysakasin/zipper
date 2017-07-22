@@ -69,6 +69,7 @@ int integer_length(uint16_t x) {
 
 void length_to_bitstream(int length, Bitstream *bstream) {
 	if (length <= 10) {
+		// cout << 254 + length << endl;
 		bstream->push_with_encode(254 + length);
 		return;
 	}
@@ -77,42 +78,58 @@ void length_to_bitstream(int length, Bitstream *bstream) {
 		return;
 	}
 
-	int len = integer_length(length) - 3;
-	uint32_t divisor = powl(2, len);
-	uint32_t base = (length-3) / divisor;
-	uint32_t extra = (length-3) % divisor;
+	int n = length;
+	int n3 = n - 3;
+	int len = integer_length(n3);
+	int len3 = len - 3;
 
-	bstream->push_with_encode(257 + (4 * len) + base);
-	bstream->push(extra, len);
+	uint32_t divisor = powl(2, len3);
+	uint32_t base = n3 / divisor;
+	uint32_t extra = n3 % divisor;
+
+	bstream->push_with_encode(257 + (4 * len3) + base);
+	bstream->push_extra(extra, len3);
 }
 
 void distance_to_bitstream(int length, Bitstream *bstream) {
-	if (length <= 2) {
+	if (length <= 4) {
 		bstream->push(length - 1, 5);
 		return;
 	}
 
-	int len = integer_length(length) - 2;
-	uint32_t divisor = powl(2, len);
-	uint32_t base = (length-1) / divisor;
-	uint32_t extra = (length-1) % divisor;
+	int n = length;
+	int n1 = n - 1;
+	int len = integer_length(n1);
+	int len2 = len - 2;
 
-	bstream->push(2 * len + base, 5);
-	bstream->push(extra, len);
+	uint32_t divisor = powl(2, len2);
+	uint32_t base = (n1) / divisor;
+	uint32_t extra = (n1) % divisor;
+
+	bstream->push(2 * len2 + base, 5);
+	bstream->push_extra(extra, len2);
 }
 
 void chain_to_bitstream(char *data, int size, chain *chain_p, Bitstream *bstream) {
 	int pos = 0;
+	// static int i = 1;
 	while (pos < size) {
 		if (chain_p == NULL) {
 			bstream->push_with_encode(data[pos]);
 			pos++;
-		// }
-		// else if (chain_p->pos == pos) {
-		// 	length_to_bitstream(chain_p->length, bstream);
-		// 	distance_to_bitstream(chain_p->distance, bstream);
-		// 	pos += chain_p->length;
-		// 	chain_p = chain_p->next;
+		}
+		else if (chain_p->pos == pos) {
+			cout << chain_p->length << endl;
+			length_to_bitstream(chain_p->length, bstream);
+			distance_to_bitstream(chain_p->distance, bstream);
+			pos += chain_p->length;
+			chain_p = chain_p->next;
+			// if (i < 4) {
+			// 	i++;
+			// }
+			// else {
+			// 	chain_p = NULL;
+			// }
 		} else {
 			bstream->push_with_encode(data[pos]);
 			pos++;
@@ -124,6 +141,9 @@ void chain_to_bitstream(char *data, int size, chain *chain_p, Bitstream *bstream
 unsigned long crc(unsigned char *buf, int len);
 
 int main() {
+	for (int i = 3; i <= 258; i++) {
+
+	}
 	ifstream file ("LICENSE", ios::in | ios::binary | ios::ate);
 	if (!file.is_open()) {
 		cout << "not open" << endl;
@@ -146,7 +166,7 @@ int main() {
 			pos++;
 		}
 		else {
-			cout << "<" << res->distance << "," << res->length << ">";
+			cout << "<" << res->pos << "," << res->length << "," << res->distance << ">";
 			pos += res->length;
 			if (chain_tail == NULL) {
 				chain_head = chain_tail = res;
@@ -196,7 +216,7 @@ int main() {
 	char os = 0xff;
 	wf.write(&os, sizeof(char));
 
-	wf.write("LICENSE", sizeof(char) * 8);
+	wf.write("test.txt", sizeof(char) * 9);
 
 	// char xlen = 0;
 	// wf.write(&xlen, sizeof(char));

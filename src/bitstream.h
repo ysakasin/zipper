@@ -26,13 +26,12 @@ public:
 		}
 	}
 
-	// void push(uint16_t n, int size) {
-	// 	for (int i = 0; i < size; i++) {
-	// 		char x = (n & (0x01 << i)) ? 1 : 0;
-	// 		std::cout << (int)x;
-	// 		stream.push(x);
-	// 	}
-	// }
+	void push_extra(uint16_t n, int size) {
+		for (int i = 0; i < size; i++) {
+			char x = (n & (0x01 << i)) ? 1 : 0;
+			stream.push(x);
+		}
+	}
 
 	void push(std::pair<uint16_t, int> p) {
 		push(p.first, p.second);
