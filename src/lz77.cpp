@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <string>
 
 #include "./bitstream.h"
 
@@ -18,7 +19,7 @@ struct chain {
 	chain *next;
 };
 
-chain *lz77(char *data, int size, int pos) {
+chain *lz77(char *data, size_t size, int pos) {
 	int begin_pos = (pos < WINDOW_SIZE ? 0 : pos - WINDOW_SIZE);
 
 	int chained_pos = -1;
@@ -69,7 +70,6 @@ int integer_length(uint16_t x) {
 
 void length_to_bitstream(int length, Bitstream *bstream) {
 	if (length <= 10) {
-		// cout << 254 + length << endl;
 		bstream->push_with_encode(254 + length);
 		return;
 	}
@@ -110,9 +110,9 @@ void distance_to_bitstream(int length, Bitstream *bstream) {
 	bstream->push_extra(extra, len2);
 }
 
-void chain_to_bitstream(char *data, int size, chain *chain_p, Bitstream *bstream) {
+void chain_to_bitstream(char *data, size_t size, chain *chain_p, Bitstream *bstream) {
 	int pos = 0;
-	// static int i = 1;
+
 	while (pos < size) {
 		if (chain_p == NULL) {
 			bstream->push_with_encode(data[pos]);
@@ -124,12 +124,6 @@ void chain_to_bitstream(char *data, int size, chain *chain_p, Bitstream *bstream
 			distance_to_bitstream(chain_p->distance, bstream);
 			pos += chain_p->length;
 			chain_p = chain_p->next;
-			// if (i < 4) {
-			// 	i++;
-			// }
-			// else {
-			// 	chain_p = NULL;
-			// }
 		} else {
 			bstream->push_with_encode(data[pos]);
 			pos++;
@@ -140,21 +134,15 @@ void chain_to_bitstream(char *data, int size, chain *chain_p, Bitstream *bstream
 
 unsigned long crc(unsigned char *buf, int len);
 
-int main() {
-	for (int i = 3; i <= 258; i++) {
-
+void free_chains(chain *head) {
+	while (head != NULL) {
+		chain *tmp = head;
+		head = head->next;
+		free(tmp);
 	}
-	ifstream file ("LICENSE", ios::in | ios::binary | ios::ate);
-	if (!file.is_open()) {
-		cout << "not open" << endl;
-		return 0;
-	}
-	auto size = file.tellg();
-    char *text = new char [size];
-    file.seekg (0, ios::beg);
-    file.read (text, size);
-    file.close();
+}
 
+void deflate(char *data, size_t size, Bitstream *bstream) {
 	int pos = 0;
 	chain *chain_head;
 	chain *chain_tail = NULL;
@@ -162,11 +150,9 @@ int main() {
 	while (pos < size) {
 		chain *res = lz77(text, size, pos);
 		if (res == NULL) {
-			cout << text[pos];
 			pos++;
 		}
 		else {
-			cout << "<" << res->pos << "," << res->length << "," << res->distance << ">";
 			pos += res->length;
 			if (chain_tail == NULL) {
 				chain_head = chain_tail = res;
@@ -177,25 +163,37 @@ int main() {
 			}
 		}
 	}
-	cout << endl;
+
+	bitstream->push(0b1,  1); // BFINAL : 最後のブロック
+	bitstream->push(0b10, 2); // BTYPE  : 固定ハフマン符号
+
+	chain_to_bitstream(text, size, chain_head, bstream);
+
+	free_chains(chain_head);
+}
+
+void create_gzip(string src, string dist) {
+	ifstream file(src, ios::in | ios::binary | ios::ate);
+	if (!file.is_open()) {
+		cout << "src file can't open" << endl;
+		return 1;
+	}
+
+	auto size = file.tellg();
+	char *data = new char [size];
+	file.seekg(0, ios::beg);
+	file.read(data, size);
+	file.close();
 
 	Bitstream bitstream;
-	bitstream.push(0b1,  1);
-	bitstream.push(0b10, 2);
-
-	ofstream wf;
-	// wf.open("tmp/test.gz", ios::out | ios::binary);
+	deflate(data, size, *bitstream);
 
 
-	// while (!bitstream.empty()) {
- //    	char a = bitstream.fetch();
-	// 	wf.write(&a, 1);
-	// }
-	// return 0;
-	chain_to_bitstream(text, size, chain_head, &bitstream);
-
-
-    wf.open("tmp/test.gz", ios::out | ios::binary);
+	ofstream wf(dist, ios::out | ios::binary);
+	if (!wf.is_open()) {
+		cout << "dist file can't open" << endl;
+		return 1;
+	}
 
 	/* gzip header */
 	unsigned char signature[2] = {0x1f, 0x8b};
@@ -204,7 +202,7 @@ int main() {
 	char method = 8;
 	wf.write(&method, sizeof(char));
 
-	char flag = 0b00001000;
+	char flag = 0b00000000;
 	wf.write(&flag, sizeof(char));
 
 	uint32_t mtime = 0;
@@ -215,15 +213,10 @@ int main() {
 
 	char os = 0xff;
 	wf.write(&os, sizeof(char));
-
-	wf.write("test.txt", sizeof(char) * 9);
-
-	// char xlen = 0;
-	// wf.write(&xlen, sizeof(char));
 	/* gzip header end */
 
-    while (!bitstream.empty()) {
-    	char a = bitstream.fetch();
+	while (!bitstream.empty()) {
+		char a = bitstream.fetch();
 		wf.write(&a, 1);
 	}
 
@@ -232,7 +225,7 @@ int main() {
 	wf.write((char *)&crc32, sizeof(uint32_t));
 	wf.write((char *)&isize, sizeof(uint32_t));
 
-    wf.close();
+	wf.close();
 
 	return 0;
 }
