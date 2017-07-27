@@ -4,7 +4,7 @@
 #include <cmath>
 #include <string>
 
-#include "./bitstream.h"
+#include "bitstream.h"
 
 #define WINDOW_SIZE 0x8000
 #define MINIMUM_CHAIN 3
@@ -119,7 +119,6 @@ void chain_to_bitstream(char *data, size_t size, chain *chain_p, Bitstream *bstr
 			pos++;
 		}
 		else if (chain_p->pos == pos) {
-			cout << chain_p->length << endl;
 			length_to_bitstream(chain_p->length, bstream);
 			distance_to_bitstream(chain_p->distance, bstream);
 			pos += chain_p->length;
@@ -148,7 +147,7 @@ void deflate(char *data, size_t size, Bitstream *bstream) {
 	chain *chain_tail = NULL;
 
 	while (pos < size) {
-		chain *res = lz77(text, size, pos);
+		chain *res = lz77(data, size, pos);
 		if (res == NULL) {
 			pos++;
 		}
@@ -164,15 +163,15 @@ void deflate(char *data, size_t size, Bitstream *bstream) {
 		}
 	}
 
-	bitstream->push(0b1,  1); // BFINAL : 最後のブロック
-	bitstream->push(0b10, 2); // BTYPE  : 固定ハフマン符号
+	bstream->push(0b1,  1); // BFINAL : 最後のブロック
+	bstream->push(0b10, 2); // BTYPE  : 固定ハフマン符号
 
-	chain_to_bitstream(text, size, chain_head, bstream);
+	chain_to_bitstream(data, size, chain_head, bstream);
 
 	free_chains(chain_head);
 }
 
-void create_gzip(string src, string dist) {
+int create_gzip(string src, string dist) {
 	ifstream file(src, ios::in | ios::binary | ios::ate);
 	if (!file.is_open()) {
 		cout << "src file can't open" << endl;
@@ -186,7 +185,7 @@ void create_gzip(string src, string dist) {
 	file.close();
 
 	Bitstream bitstream;
-	deflate(data, size, *bitstream);
+	deflate(data, size, &bitstream);
 
 
 	ofstream wf(dist, ios::out | ios::binary);
@@ -220,7 +219,7 @@ void create_gzip(string src, string dist) {
 		wf.write(&a, 1);
 	}
 
-	uint32_t crc32 = crc((unsigned char *)text, size);
+	uint32_t crc32 = crc((unsigned char *)data, size);
 	uint32_t isize = size % 0x100000000;
 	wf.write((char *)&crc32, sizeof(uint32_t));
 	wf.write((char *)&isize, sizeof(uint32_t));

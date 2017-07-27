@@ -8,14 +8,14 @@ uint16_t msdos_date(uint16_t year, uint16_t month, uint16_t day) {
 	return year << 11 | month << 5 | day;
 }
 
-LocalFileHeader::LocalFileHeader(string filename, uint32_t size, uint32_t crc32) {
-	version = 10;
+LocalFileHeader::LocalFileHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32) {
+	version = 20;
 	flag = 0;
-	compression_method = 0;
+	compression_method = 8;
 	mod_file_time = msdos_time(12, 0, 0);
 	mod_file_date = msdos_date(2017, 7, 7);
 	this->crc32 = crc32;
-	compressed_size = size;
+	this->compressed_size = compressed_size;
 	uncompressed_size = size;
 	file_name_length = filename.size();
 	extra_field_length = 0;
@@ -37,15 +37,15 @@ void LocalFileHeader::dump(ofstream& wf) {
 	wf.write(filename.c_str(), file_name_length);
 }
 
-CentralDirectoryHeader::CentralDirectoryHeader(string filename, uint32_t size, uint32_t crc32) {
+CentralDirectoryHeader::CentralDirectoryHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32) {
 	version = 0x3f00; // ZIP v6.3
-	version_needed_to_extract = 10;
+	version_needed_to_extract = 20;
 	flag = 0;
-	compression_method = 0;
+	compression_method = 8;
 	mod_file_time = msdos_time(12, 0, 0);
 	mod_file_date = msdos_date(2017, 7, 7);
 	this->crc32 = crc32;
-	compressed_size = size;
+	this->compressed_size = compressed_size;
 	uncompressed_size = size;
 	file_name_length = filename.size();
 	extra_field_length = 0;

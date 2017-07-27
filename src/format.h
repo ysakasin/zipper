@@ -20,7 +20,7 @@ private:
     string filename;
 
 public:
-	LocalFileHeader(string filename, uint32_t size, uint32_t crc32);
+	LocalFileHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32);
 	void dump(ofstream& stream);
 	uint32_t size() { return 30 + filename.size(); }
 };
@@ -47,7 +47,7 @@ private:
     string filename;
 
 public:
-	CentralDirectoryHeader(string filename, uint32_t size, uint32_t crc32);
+	CentralDirectoryHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32);
 	void dump(ofstream& stream);
 	uint32_t size() { return 46 + filename.size(); }
 };

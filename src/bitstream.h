@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <queue>
 #include "huffman.h"
@@ -39,5 +41,15 @@ public:
 
 	void push_with_encode(uint16_t n) {
 		push(static_huffman_table(n));
+	}
+
+	size_t byte_size() {
+		const auto length = stream.size();
+		if (length % 8 == 0) {
+			return length / 8;
+		}
+		else {
+			return length / 8 + 1;
+		}
 	}
 };
