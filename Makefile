@@ -1,4 +1,4 @@
-TARGET ?= a.out
+TARGET ?= zipper
 SRC_DIRS ?= ./src
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
