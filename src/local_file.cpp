@@ -80,12 +80,12 @@ void CentralDirectoryHeader::dump(ofstream& wf) {
 
 EndofCentralDirectoryRecord::EndofCentralDirectoryRecord(uint32_t size, uint32_t offset) {
 	num_of_this_disk = 0;
-    num_of_start_central_directory = 0;
-    total_number_on_this_disk = 1;
-    total_number = 1;
-    sizeof_central_directory = size;
-    starting_disk_number = offset;
-    comment_length = 0;
+	num_of_start_central_directory = 0;
+	total_number_on_this_disk = 1;
+	total_number = 1;
+	sizeof_central_directory = size;
+	starting_disk_number = offset;
+	comment_length = 0;
 }
 
 void EndofCentralDirectoryRecord::dump(ofstream& wf) {
