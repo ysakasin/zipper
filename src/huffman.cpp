@@ -17,6 +17,7 @@ std::pair<uint16_t, int> static_huffman_table(uint16_t x) {
 		return {0b11000000 + (x - 280), 8};
 	}
 	else {
+		cout << "huffman out of range" << endl;
 		throw "huffman out of range";
 	}
 }

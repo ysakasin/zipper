@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <string>
 #include <fstream>
@@ -23,6 +25,7 @@ public:
 	LocalFileHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32);
 	void dump(ofstream& stream);
 	uint32_t size() { return 30 + filename.size(); }
+	void set_dir_flag() { version = 10; compression_method = 0; }
 };
 
 class CentralDirectoryHeader {
@@ -47,9 +50,10 @@ private:
 	string filename;
 
 public:
-	CentralDirectoryHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32);
+	CentralDirectoryHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32, uint32_t offset);
 	void dump(ofstream& stream);
 	uint32_t size() { return 46 + filename.size(); }
+	void set_dir_flag() { flag |= 1UL << 4; }
 };
 
 class EndofCentralDirectoryRecord {
@@ -64,7 +68,7 @@ private:
 	uint16_t comment_length;
 
 public:
-	EndofCentralDirectoryRecord(uint32_t size, uint32_t offset);
+	EndofCentralDirectoryRecord(uint32_t size, uint32_t offset, uint16_t nrecord);
 	void dump(ofstream& stream);
 };
 

@@ -37,7 +37,8 @@ void LocalFileHeader::dump(ofstream& wf) {
 	wf.write(filename.c_str(), file_name_length);
 }
 
-CentralDirectoryHeader::CentralDirectoryHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32) {
+CentralDirectoryHeader::CentralDirectoryHeader(string filename, uint32_t size,
+		uint32_t compressed_size, uint32_t crc32, uint32_t offset) {
 	version = 0x3f00; // ZIP v6.3
 	version_needed_to_extract = 20;
 	flag = 0;
@@ -53,7 +54,7 @@ CentralDirectoryHeader::CentralDirectoryHeader(string filename, uint32_t size, u
 	disk_number_start = 0;
 	internal_file_attributes = 0;
 	external_file_attributes = 0;
-	offset_of_local_header = 0;
+	offset_of_local_header = offset;
 	this->filename = filename;
 }
 
@@ -78,11 +79,11 @@ void CentralDirectoryHeader::dump(ofstream& wf) {
 	wf.write(filename.c_str(), file_name_length);
 }
 
-EndofCentralDirectoryRecord::EndofCentralDirectoryRecord(uint32_t size, uint32_t offset) {
+EndofCentralDirectoryRecord::EndofCentralDirectoryRecord(uint32_t size, uint32_t offset, uint16_t nrecord) {
 	num_of_this_disk = 0;
 	num_of_start_central_directory = 0;
-	total_number_on_this_disk = 1;
-	total_number = 1;
+	total_number_on_this_disk = nrecord;
+	total_number = nrecord;
 	sizeof_central_directory = size;
 	starting_disk_number = offset;
 	comment_length = 0;

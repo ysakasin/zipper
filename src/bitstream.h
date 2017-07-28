@@ -2,11 +2,13 @@
 
 #include <cstdint>
 #include <queue>
+#include <vector>
 #include "huffman.h"
 
 class Bitstream {
 private:
 	std::queue<char> stream;
+	std::vector<char> v;
 
 public:
 	bool empty() {
@@ -26,6 +28,11 @@ public:
 			char x = (n & (0x01 << --size)) ? 1 : 0;
 			stream.push(x);
 		}
+
+		while (stream.size() >= 8) {
+			char x = fetch();
+			v.push_back(x);
+		}
 	}
 
 	void push_extra(uint16_t n, int size) {
@@ -43,13 +50,18 @@ public:
 		push(static_huffman_table(n));
 	}
 
+	void finalize() {
+		while (stream.size() > 0) {
+			char x = fetch();
+			v.push_back(x);
+		}
+	}
+
 	size_t byte_size() {
-		const auto length = stream.size();
-		if (length % 8 == 0) {
-			return length / 8;
-		}
-		else {
-			return length / 8 + 1;
-		}
+		return v.size();
+	}
+
+	char *data() {
+		return v.data();
 	}
 };

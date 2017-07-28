@@ -49,9 +49,14 @@ chain *lz77(char *data, size_t size, int pos) {
 	}
 
 	chain *res = (chain *)malloc(sizeof(chain));
+	if (res == NULL) {
+		cout << "malloc miss" << endl;
+		throw "malloc miss";
+	}
 	res->pos = pos;
 	res->distance = pos - chained_pos;
 	res->length = chained_length;
+	res->next = NULL;
 
 	return res;
 }
@@ -110,8 +115,10 @@ void distance_to_bitstream(int length, Bitstream *bstream) {
 	bstream->push_extra(extra, len2);
 }
 
-void chain_to_bitstream(char *data, size_t size, chain *chain_p, Bitstream *bstream) {
+void chain_to_bitstream(char *d, size_t size, chain *chain_p, Bitstream *bstream) {
 	int pos = 0;
+
+	unsigned char *data = (unsigned char *)d;
 
 	while (pos < size) {
 		if (chain_p == NULL) {
@@ -143,7 +150,7 @@ void free_chains(chain *head) {
 
 void deflate(char *data, size_t size, Bitstream *bstream) {
 	int pos = 0;
-	chain *chain_head;
+	chain *chain_head = NULL;
 	chain *chain_tail = NULL;
 
 	while (pos < size) {
@@ -154,7 +161,8 @@ void deflate(char *data, size_t size, Bitstream *bstream) {
 		else {
 			pos += res->length;
 			if (chain_tail == NULL) {
-				chain_head = chain_tail = res;
+				chain_head = res;
+				chain_tail = res;
 			}
 			else {
 				chain_tail->next = res;
@@ -167,6 +175,7 @@ void deflate(char *data, size_t size, Bitstream *bstream) {
 	bstream->push(0b10, 2); // BTYPE  : 固定ハフマン符号
 
 	chain_to_bitstream(data, size, chain_head, bstream);
+	bstream->finalize();
 
 	free_chains(chain_head);
 }
