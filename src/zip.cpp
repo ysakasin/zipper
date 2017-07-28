@@ -1,5 +1,4 @@
 #include "zip.h"
-#include "format.h"
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fstream>

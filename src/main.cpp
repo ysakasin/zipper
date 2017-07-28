@@ -1,5 +1,4 @@
 #include "zip.h"
-#include "format.h"
 
 using namespace std;
 
