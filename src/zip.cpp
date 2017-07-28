@@ -7,14 +7,11 @@
 #include <string>
 #include "bitstream.h"
 #include "deflate.h"
+#include "crc.h"
 
 using namespace std;
 
 #define SIZE_LOCAL_FILE_HEADER 30
-
-extern uint16_t msdos_time(uint16_t hour, uint16_t min, uint16_t sec);
-
-extern uint16_t msdos_date(uint16_t year, uint16_t month, uint16_t day);
 
 Zip::Zip(string dist) {
 	wf.open(dist, ios::out | ios::binary);

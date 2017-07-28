@@ -1,12 +1,7 @@
 #include "format.h"
+#include "timestamp.h"
 
-uint16_t msdos_time(uint16_t hour, uint16_t min, uint16_t sec) {
-	return hour << 11 | min << 5 | (sec / 2);
-}
-
-uint16_t msdos_date(uint16_t year, uint16_t month, uint16_t day) {
-	return year << 11 | month << 5 | day;
-}
+using namespace std;
 
 LocalFileHeader::LocalFileHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32) {
 	version = 20;

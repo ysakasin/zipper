@@ -4,8 +4,6 @@
 #include <string>
 #include <fstream>
 
-using namespace std;
-
 class LocalFileHeader {
 private:
 	const uint32_t signature = 0x04034b50;
@@ -19,11 +17,11 @@ private:
 	uint32_t uncompressed_size;
 	uint16_t file_name_length;
 	uint16_t extra_field_length;
-	string filename;
+	std::string filename;
 
 public:
-	LocalFileHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32);
-	void dump(ofstream& stream);
+	LocalFileHeader(std::string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32);
+	void dump(std::ofstream& stream);
 	uint32_t size() { return 30 + filename.size(); }
 	void set_dir_flag() { version = 10; compression_method = 0; }
 };
@@ -47,11 +45,11 @@ private:
 	uint16_t internal_file_attributes;
 	uint32_t external_file_attributes;
 	uint32_t offset_of_local_header;
-	string filename;
+	std::string filename;
 
 public:
-	CentralDirectoryHeader(string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32, uint32_t offset);
-	void dump(ofstream& stream);
+	CentralDirectoryHeader(std::string filename, uint32_t size, uint32_t compressed_size, uint32_t crc32, uint32_t offset);
+	void dump(std::ofstream& stream);
 	uint32_t size() { return 46 + filename.size(); }
 	void set_dir_flag() { flag |= 1UL << 4; }
 };
@@ -69,19 +67,5 @@ private:
 
 public:
 	EndofCentralDirectoryRecord(uint32_t size, uint32_t offset, uint16_t nrecord);
-	void dump(ofstream& stream);
+	void dump(std::ofstream& stream);
 };
-
-struct discripter {
-	uint32_t signature = 0x08074b50;
-	uint32_t crc32;
-	uint32_t compressed_size;
-	uint32_t uncompressed_size;
-};
-
-void create_single_zip(string src, string dist);
-// void create_empty_zip(string path);
-// local_file_header create_local_file_header(uint16_t size, uint32_t file_name_size, uint32_t crc32);
-// central_directory_header create_central_directory_header(uint16_t size, uint32_t file_name_size, uint32_t crc32);
-
-unsigned long crc(unsigned char *buf, int len);

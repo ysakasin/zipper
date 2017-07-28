@@ -20,16 +20,3 @@ public:
 	void add_dir(std::string dirname);
 	void finalize();
 };
-
-class ZipEntry {
-private:
-	std::string filename;
-	uint32_t org_size;
-	uint32_t compressed_size;
-	uint32_t crc32;
-	uint32_t offset_file_header;
-
-public:
-	void dump_local_file_header(std::ofstream& stream);
-	void dump_central_directory_header(std::ofstream& stream);
-};

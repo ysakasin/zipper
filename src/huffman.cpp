@@ -3,7 +3,6 @@
 using namespace std;
 
 std::pair<uint16_t, int> static_huffman_table(uint16_t x) {
-	// cout << "h" << x << endl;
 	if (x <= 143) {
 		return {0b00110000 + x, 8};
 	}

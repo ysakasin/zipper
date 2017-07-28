@@ -5,6 +5,7 @@
 #include <string>
 
 #include "bitstream.h"
+#include "crc.h"
 
 #define WINDOW_SIZE 0x8000
 #define MINIMUM_CHAIN 3
@@ -137,8 +138,6 @@ void chain_to_bitstream(char *d, size_t size, chain *chain_p, Bitstream *bstream
 	}
 	bstream->push_with_encode(256);
 }
-
-unsigned long crc(unsigned char *buf, int len);
 
 void free_chains(chain *head) {
 	while (head != NULL) {
